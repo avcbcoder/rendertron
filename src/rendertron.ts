@@ -56,7 +56,7 @@ export class Rendertron {
     this.app.use(route.post(
       '/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this)));
     this.app.use(route.get(
-        '/search/ytSearchTerm', this.handleYTSearchRequest.bind(this)));
+        '/search/:ytSearchTerm', this.handleYTSearchRequest.bind(this)));
 
     return this.app.listen(this.port, () => {
       console.log(`Listening on port ${this.port}`);
@@ -131,13 +131,14 @@ export class Rendertron {
     }
   }
 
-  async handleYTSearchRequest(ctx: Koa.Context, searchTerm: string) {
+  async handleYTSearchRequest(ctx: Koa.Context, ytSearchTerm: string) {
     if (!this.renderer) {
       throw (new Error('No renderer initalized yet.'));
     }
 
     
     try {
+      console.log("searching for : ", ytSearchTerm);
       const ytSearchResult = await this.renderer.ytSearch('espresso sabrina');
       ctx.set('Content-Type', 'text/plain');
       ctx.body = ytSearchResult;
