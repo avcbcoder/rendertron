@@ -209,7 +209,11 @@ export class Renderer {
       if (!videoTitleElement) {
         throw new Error("Could not find video title element");
       }
-      return videoTitleElement.getAttribute("href")?.split("v=")[1];
+      const videoTitleElementHref = videoTitleElement.getAttribute("href");
+      if (!videoTitleElementHref) {
+        throw new Error("Could not find video title href");
+      }
+      return videoTitleElementHref.split("v=")[1];
       // return document
       //   .querySelector("#video-title")
       //   .getAttribute("href")
