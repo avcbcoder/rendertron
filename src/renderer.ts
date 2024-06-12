@@ -205,10 +205,15 @@ export class Renderer {
 
     // Extract the video ID of the first result
     const videoIdText = await page.evaluate(() => {
-      return document
-        .querySelector("#video-title")
-        .getAttribute("href")
-        .split("v=")[1];
+      const videoTitleElement = document.querySelector("#video-title");
+      if (!videoTitleElement) {
+        throw new Error("Could not find video title element");
+      }
+      return videoTitleElement.getAttribute("href")?.split("v=")[1];
+      // return document
+      //   .querySelector("#video-title")
+      //   .getAttribute("href")
+      //   .split("v=")[1];
     });
 
     const videoId = videoIdText.split("&")[0];
