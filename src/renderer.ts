@@ -167,7 +167,7 @@ export class Renderer {
     try {
       // Navigate to page. Wait until there are no oustanding network requests.
       response =
-          await page.goto(url, {timeout: 10000, waitUntil: 'networkidle0'});
+          await page.goto(url, {timeout: 30000, waitUntil: 'networkidle0'});
     } catch (e) {
       console.error(e);
     }
@@ -189,6 +189,32 @@ export class Renderer {
     // https://github.com/GoogleChrome/puppeteer/blob/v1.8.0/docs/api.md#pagescreenshotoptions
     const buffer = await page.screenshot(screenshotOptions) as Buffer;
     return buffer;
+  }
+
+  async ytSearch(
+    searchTerm: string): Promise<String> {
+    const page = await this.browser.newPage();
+    await page.goto(
+      `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        searchTerm
+      )}`
+    );
+
+    // Wait for the search results to load
+    await page.waitForSelector("#video-title");
+
+    // Extract the video ID of the first result
+    const videoIdText = await page.evaluate(() => {
+      return document
+        .querySelector("#video-title")
+        .getAttribute("href")
+        .split("v=")[1];
+    });
+
+    const videoId = videoIdText.split("&")[0];
+    console.log(`Video for ${searchTerm} : ${videoId}`);
+
+    return videoId;
   }
 }
 

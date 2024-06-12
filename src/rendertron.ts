@@ -55,6 +55,8 @@ export class Rendertron {
       '/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this)));
     this.app.use(route.post(
       '/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this)));
+    this.app.use(route.get(
+        '/search/ytSearchTerm', this.handleYTSearchRequest.bind(this)));
 
     return this.app.listen(this.port, () => {
       console.log(`Listening on port ${this.port}`);
@@ -128,7 +130,25 @@ export class Rendertron {
       ctx.status = err.type === 'Forbidden' ? 403 : 500;
     }
   }
+
+  async handleYTSearchRequest(ctx: Koa.Context, searchTerm: string) {
+    if (!this.renderer) {
+      throw (new Error('No renderer initalized yet.'));
+    }
+
+    
+    try {
+      const ytSearchResult = await this.renderer.ytSearch('espresso sabrina');
+      ctx.set('Content-Type', 'text/plain');
+      ctx.body = ytSearchResult;
+    } catch (error) {
+      const err = error as ScreenshotError;
+      ctx.status = err.type === 'Forbidden' ? 403 : 500;
+    }
+  }
 }
+
+
 
 async function logUncaughtError(error: Error) {
   console.error('Uncaught exception');
