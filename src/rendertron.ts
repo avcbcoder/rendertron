@@ -139,7 +139,7 @@ export class Rendertron {
     
     try {
       console.log("searching for : ", ytSearchTerm);
-      const ytSearchResult = await this.renderer.ytSearch('espresso sabrina');
+      const ytSearchResult = await this.renderer.ytSearch(ytSearchTerm);
       ctx.set('Content-Type', 'text/plain');
       ctx.body = ytSearchResult;
     } catch (error) {
