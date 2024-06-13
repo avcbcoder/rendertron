@@ -6,9 +6,7 @@ import * as koaSend from 'koa-send';
 import * as koaLogger from 'koa-logger';
 import * as path from 'path';
 import * as puppeteer from 'puppeteer';
-import * as url from 'url';
 
-import {Renderer, ScreenshotError} from './renderer';
 import {Config, ConfigManager} from './config';
 
 /**
@@ -18,7 +16,6 @@ import {Config, ConfigManager} from './config';
 export class Rendertron {
   app: Koa = new Koa();
   private config: Config = ConfigManager.config;
-  private renderer: Renderer|undefined;
   private port = process.env.PORT;
 
   async initialize() {
@@ -26,9 +23,6 @@ export class Rendertron {
     this.config = await ConfigManager.getConfiguration();
 
     this.port = this.port || this.config.port;
-
-    const browser = await puppeteer.launch({args: ['--no-sandbox'], headless: true});
-    this.renderer = new Renderer(browser, this.config);
 
     this.app.use(koaLogger());
 
@@ -48,13 +42,6 @@ export class Rendertron {
       const { DatastoreCache } = await import('./datastore-cache');
       this.app.use(new DatastoreCache().middleware());
     }
-
-    this.app.use(
-      route.get('/render/:url(.*)', this.handleRenderRequest.bind(this)));
-    this.app.use(route.get(
-      '/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this)));
-    this.app.use(route.post(
-      '/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this)));
     this.app.use(route.get(
         '/search/:ytSearchTerm', this.handleYTSearchRequest.bind(this)));
 
@@ -63,83 +50,42 @@ export class Rendertron {
     });
   }
 
-  /**
-   * Checks whether or not the URL is valid. For example, we don't want to allow
-   * the requester to read the file system via Chrome.
-   */
-  restricted(href: string): boolean {
-    const parsedUrl = url.parse(href);
-    const protocol = parsedUrl.protocol || '';
+  async ytSearch(
+    searchTerm: string): Promise<String> {
+    const browser = await puppeteer.launch({ args: ['--no-sandbox'], headless: true });
+    const page = await browser.newPage();
+    await page.goto(
+      `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        searchTerm
+      )}`
+    );
 
-    if (!protocol.match(/^https?/)) {
-      return true;
-    }
+    // Wait for the search results to load
+    await page.waitForSelector("#video-title");
 
-    return false;
-  }
+    // Extract the video ID of the first result
+    const videoIdText = await page.evaluate(() => {
+      const videoTitleElement = document.querySelector("#video-title");
+      if (!videoTitleElement) {
+        throw new Error("Could not find video title element");
+      }
+      const videoTitleElementHref = videoTitleElement.getAttribute("href");
+      if (!videoTitleElementHref) {
+        throw new Error("Could not find video title href");
+      }
+      return videoTitleElementHref.split("v=")[1];
+    });
 
-  async handleRenderRequest(ctx: Koa.Context, url: string) {
-    if (!this.renderer) {
-      throw (new Error('No renderer initalized yet.'));
-    }
+    const videoId = videoIdText.split("&")[0];
+    console.log(`Video for ${searchTerm} : ${videoId}`);
 
-    if (this.restricted(url)) {
-      ctx.status = 403;
-      return;
-    }
-
-    const mobileVersion = 'mobile' in ctx.query ? true : false;
-
-    const serialized = await this.renderer.serialize(url, mobileVersion);
-    // Mark the response as coming from Rendertron.
-    ctx.set('x-renderer', 'rendertron');
-    ctx.status = serialized.status;
-    ctx.body = serialized.content;
-  }
-
-  async handleScreenshotRequest(ctx: Koa.Context, url: string) {
-    if (!this.renderer) {
-      throw (new Error('No renderer initalized yet.'));
-    }
-
-    if (this.restricted(url)) {
-      ctx.status = 403;
-      return;
-    }
-
-    let options = undefined;
-    if (ctx.method === 'POST' && ctx.request.body) {
-      options = ctx.request.body;
-    }
-
-    const dimensions = {
-      width: Number(ctx.query['width']) || this.config.width,
-      height: Number(ctx.query['height']) || this.config.height
-    };
-
-    const mobileVersion = 'mobile' in ctx.query ? true : false;
-
-    try {
-      const img = await this.renderer.screenshot(
-        url, mobileVersion, dimensions, options);
-      ctx.set('Content-Type', 'image/jpeg');
-      ctx.set('Content-Length', img.length.toString());
-      ctx.body = img;
-    } catch (error) {
-      const err = error as ScreenshotError;
-      ctx.status = err.type === 'Forbidden' ? 403 : 500;
-    }
+    return videoId;
   }
 
   async handleYTSearchRequest(ctx: Koa.Context, ytSearchTerm: string) {
-    if (!this.renderer) {
-      throw (new Error('No renderer initalized yet.'));
-    }
-
-    
     try {
       console.log("searching for : ", ytSearchTerm);
-      const ytSearchResult = await this.renderer.ytSearch(ytSearchTerm);
+      const ytSearchResult = await this.ytSearch(ytSearchTerm);
       ctx.set('Content-Type', 'text/plain');
       ctx.body = ytSearchResult;
     } catch (error) {
