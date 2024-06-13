@@ -89,25 +89,7 @@ export class Rendertron {
       ctx.set('Content-Type', 'text/plain');
       ctx.body = ytSearchResult;
     } catch (error) {
-      const err = error as ScreenshotError;
-      ctx.status = err.type === 'Forbidden' ? 403 : 500;
+      console.log(error)
     }
   }
-}
-
-
-
-async function logUncaughtError(error: Error) {
-  console.error('Uncaught exception');
-  console.error(error);
-  process.exit(1);
-}
-
-// Start rendertron if not running inside tests.
-if (!module.parent) {
-  const rendertron = new Rendertron();
-  rendertron.initialize();
-
-  process.on('uncaughtException', logUncaughtError);
-  process.on('unhandledRejection', logUncaughtError);
 }
