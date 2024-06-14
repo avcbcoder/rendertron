@@ -43,45 +43,46 @@ export class Rendertron {
       const { DatastoreCache } = await import('./datastore-cache');
       this.app.use(new DatastoreCache().middleware());
     }
-    this.app.use(route.get(
-        '/search/:ytSearchTerm', this.handleYTSearchRequest.bind(this)));
+    this.app.use(route.get('/search/:ytSearchTerm', this.handleYTSearchRequest.bind(this)));
 
     return this.app.listen(this.port, () => {
       console.log(`Listening on port ${this.port}`);
     });
   }
 
-  async ytSearch(
-    searchTerm: string): Promise<String> {
-    const browser = await puppeteer.launch({ args: ['--no-sandbox'], headless: true });
-    const page = await browser.newPage();
-    await page.goto(
-      `https://www.youtube.com/results?search_query=${encodeURIComponent(
-        searchTerm
-      )}`
-    );
+  async ytSearch(searchTerm: string): Promise<string> {
+    let browser;
+    try {
+      browser = await puppeteer.launch({ args: ['--no-sandbox'], headless: true });
+      const page = await browser.newPage();
+      await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`, { timeout: 60000 });
 
-    // Wait for the search results to load
-    await page.waitForSelector("#video-title");
+      await page.waitForSelector("#video-title", { timeout: 60000 });
 
-    // Extract the video ID of the first result
-    const videoIdText = await page.evaluate(() => {
-      const videoTitleElement = document.querySelector("#video-title");
-      if (!videoTitleElement) {
-        throw new Error("Could not find video title element");
+      const videoIdText = await page.evaluate(() => {
+        const videoTitleElement = document.querySelector("#video-title");
+        if (!videoTitleElement) {
+          throw new Error("Could not find video title element");
+        }
+        const videoTitleElementHref = videoTitleElement.getAttribute("href");
+        if (!videoTitleElementHref) {
+          throw new Error("Could not find video title href");
+        }
+        return videoTitleElementHref.split("v=")[1];
+      });
+
+      const videoId = videoIdText.split("&")[0];
+      console.log(`Video for ${searchTerm} : ${videoId}`);
+
+      return videoId;
+    } catch (error) {
+      console.error(`Error searching for ${searchTerm}:`, error);
+      throw error;
+    } finally {
+      if (browser) {
+        await browser.close();
       }
-      const videoTitleElementHref = videoTitleElement.getAttribute("href");
-      if (!videoTitleElementHref) {
-        throw new Error("Could not find video title href");
-      }
-      return videoTitleElementHref.split("v=")[1];
-    });
-
-    const videoId = videoIdText.split("&")[0];
-    console.log(`Video for ${searchTerm} : ${videoId}`);
-
-    // browser.close();
-    return videoId;
+    }
   }
 
   async handleYTSearchRequest(ctx: Koa.Context, ytSearchTerm: string) {
@@ -91,7 +92,9 @@ export class Rendertron {
       ctx.set('Content-Type', 'text/plain');
       ctx.body = ytSearchResult;
     } catch (error) {
-      console.log(error)
+      console.error("Failed to handle YT search request:", error);
+      ctx.status = 500;
+      ctx.body = 'Internal Server Error';
     }
   }
 }
