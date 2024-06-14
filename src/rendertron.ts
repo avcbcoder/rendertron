@@ -81,7 +81,8 @@ export class Rendertron {
     } finally {
       if (browser) {
         try {
-          await browser.close();
+          if (browser.close)
+            await browser.close();
         } catch (closeError) {
           console.error("Error closing the browser:", closeError);
         }
