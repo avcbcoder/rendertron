@@ -17,10 +17,8 @@ export class Rendertron {
   app: Koa = new Koa();
   private config: Config = ConfigManager.config;
   private port = process.env.PORT;
-  private browser: puppeteer.Browser | null = null;
 
   constructor() {
-    // this.browser = null;
     this.initialize();
   }
   
@@ -30,11 +28,6 @@ export class Rendertron {
 
     this.port = this.port || this.config.port;
     console.log("PORT IN ENV: ", process.env.PORT);
-    
-    this.browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-      headless: true
-    });
 
     this.app.use(koaLogger());
 
@@ -64,14 +57,15 @@ export class Rendertron {
 
   async ytSearch(searchTerm: string): Promise<string> {
     try {
-      const page = this.browser ? this.browser.newPage() : null;
-
-      if (!page) {
-        return '';
-      }
-
+      const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        headless: true
+      });
+      const page = await browser.newPage();
       await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`, { timeout: 60000 });
+
       await page.waitForSelector("#video-title", { timeout: 60000 });
+
       const videoIdText = await page.evaluate(() => {
         const videoTitleElement = document.querySelector("#video-title");
         if (!videoTitleElement) {
