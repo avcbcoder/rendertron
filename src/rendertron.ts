@@ -17,6 +17,7 @@ export class Rendertron {
   app: Koa = new Koa();
   private config: Config = ConfigManager.config;
   private port = process.env.PORT;
+  private browser: puppeteer.Browser;
 
   async initialize() {
     // Load config
@@ -24,6 +25,11 @@ export class Rendertron {
 
     this.port = this.port || this.config.port;
     console.log("PORT IN ENV: ", process.env.PORT);
+    
+    this.browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      headless: true
+    });
 
     this.app.use(koaLogger());
 
@@ -45,16 +51,15 @@ export class Rendertron {
     }
     this.app.use(route.get('/search/:ytSearchTerm', this.handleYTSearchRequest.bind(this)));
 
+
     return this.app.listen(this.port, () => {
       console.log(`Listening on port ${this.port}`);
     });
   }
 
   async ytSearch(searchTerm: string): Promise<string> {
-    let browser: puppeteer.Browser | null = null;
     try {
-      browser = await puppeteer.launch({ args: ['--no-sandbox'], headless: true });
-      const page = await browser.newPage();
+      const page = await this.browser.newPage();
       await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`, { timeout: 60000 });
 
       await page.waitForSelector("#video-title", { timeout: 60000 });
@@ -71,6 +76,8 @@ export class Rendertron {
         return videoTitleElementHref.split("v=")[1];
       });
 
+      await page.close();
+
       const videoId = videoIdText.split("&")[0];
       console.log(`Video for ${searchTerm} : ${videoId}`);
 
@@ -80,10 +87,10 @@ export class Rendertron {
       throw error;
     }
     // finally {
-    //   if (browser) {
+    //   if (this.browser) {
     //     try {
-    //       if (browser.close)
-    //         await browser.close();
+    //       if (this.browser.close)
+    //         await this.browser.close();
     //     } catch (closeError) {
     //       console.error("Error closing the browser:", closeError);
     //     }
