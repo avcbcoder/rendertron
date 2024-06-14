@@ -9,6 +9,21 @@ import * as puppeteer from 'puppeteer';
 
 import {Config, ConfigManager} from './config';
 
+
+let isBrowserInitiated = false;
+let gBrowser : puppeteer.Browser = null;
+
+async function getBrowser() : puppeteer.Browser {
+  if (!isBrowserInitiated) {
+    isBrowserInitiated = true;
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      headless: true
+    });
+    gBrowser = browser;
+  }
+  return gBrowser;
+}
 /**
  * Rendertron rendering service. This runs the server which routes rendering
  * requests through to the renderer.
@@ -57,10 +72,11 @@ export class Rendertron {
 
   async ytSearch(searchTerm: string): Promise<string> {
     try {
-      const browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-        headless: true
-      });
+      // const browser = await puppeteer.launch({
+      //   args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      //   headless: true
+      // });
+      const browser = await getBrowser();
       const page = await browser.newPage();
       await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`, { timeout: 60000 });
 
