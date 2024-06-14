@@ -11,7 +11,8 @@ import {Config, ConfigManager} from './config';
 
 
 let isBrowserInitiated = false;
-let gBrowser : puppeteer.Browser;
+let gBrowser: puppeteer.Browser;
+let gPage: puppeteer.Page;
 
 async function getBrowser() : Promise<puppeteer.Browser> {
   if (!isBrowserInitiated) {
@@ -24,6 +25,16 @@ async function getBrowser() : Promise<puppeteer.Browser> {
   }
   return gBrowser;
 }
+
+
+async function getPage(): Promise<puppeteer.Page> {
+  if (!gPage) {
+    const browser = await getBrowser();
+    gPage = await browser.newPage();
+  }
+  return gPage;
+}
+
 /**
  * Rendertron rendering service. This runs the server which routes rendering
  * requests through to the renderer.
@@ -76,8 +87,9 @@ export class Rendertron {
       //   args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       //   headless: true
       // });
-      const browser = await getBrowser();
-      const page = await browser.newPage();
+      // const browser = await getBrowser();
+      // const page = await browser.newPage();
+      const page = await getPage();
       await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`, { timeout: 60000 });
 
       await page.waitForSelector("#video-title", { timeout: 60000 });
@@ -94,7 +106,7 @@ export class Rendertron {
         return videoTitleElementHref.split("v=")[1];
       });
 
-      await page.close();
+      // await page.close();
 
       const videoId = videoIdText.split("&")[0];
       console.log(`Video for ${searchTerm} : ${videoId}`);
