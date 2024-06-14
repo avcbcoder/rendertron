@@ -64,11 +64,14 @@ export class Rendertron {
 
   async ytSearch(searchTerm: string): Promise<string> {
     try {
-      const page = await this.browser.newPage();
+      const page = this.browser ? this.browser.newPage() : null;
+
+      if (!page) {
+        return '';
+      }
+
       await page.goto(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`, { timeout: 60000 });
-
       await page.waitForSelector("#video-title", { timeout: 60000 });
-
       const videoIdText = await page.evaluate(() => {
         const videoTitleElement = document.querySelector("#video-title");
         if (!videoTitleElement) {
