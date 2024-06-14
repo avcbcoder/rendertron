@@ -78,16 +78,17 @@ export class Rendertron {
     } catch (error) {
       console.error(`Error searching for ${searchTerm}:`, error);
       throw error;
-    } finally {
-      if (browser) {
-        try {
-          if (browser.close)
-            await browser.close();
-        } catch (closeError) {
-          console.error("Error closing the browser:", closeError);
-        }
-      }
     }
+    // finally {
+    //   if (browser) {
+    //     try {
+    //       if (browser.close)
+    //         await browser.close();
+    //     } catch (closeError) {
+    //       console.error("Error closing the browser:", closeError);
+    //     }
+    //   }
+    // }
   }
 
   async handleYTSearchRequest(ctx: Koa.Context, ytSearchTerm: string) {
