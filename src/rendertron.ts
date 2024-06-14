@@ -51,7 +51,7 @@ export class Rendertron {
   }
 
   async ytSearch(searchTerm: string): Promise<string> {
-    let browser;
+    let browser: puppeteer.Browser | null = null;
     try {
       browser = await puppeteer.launch({ args: ['--no-sandbox'], headless: true });
       const page = await browser.newPage();
@@ -79,8 +79,10 @@ export class Rendertron {
       console.error(`Error searching for ${searchTerm}:`, error);
       throw error;
     } finally {
-      if (browser) {
+      try {
         await browser.close();
+      } catch (closeError) {
+        console.error("Error closing the browser:", closeError);
       }
     }
   }
