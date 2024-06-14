@@ -20,7 +20,7 @@ export class Rendertron {
   private browser: puppeteer.Browser;
 
   constructor() {
-    this.browser = null;
+    // this.browser = null;
     this.initialize();
   }
   
