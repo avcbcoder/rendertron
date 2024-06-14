@@ -17,7 +17,7 @@ export class Rendertron {
   app: Koa = new Koa();
   private config: Config = ConfigManager.config;
   private port = process.env.PORT;
-  private browser: puppeteer.Browser;
+  private browser: puppeteer.Browser | null = null;
 
   constructor() {
     // this.browser = null;
