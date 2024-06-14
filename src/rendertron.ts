@@ -19,17 +19,19 @@ export class Rendertron {
   private port = process.env.PORT;
   private browser: puppeteer.Browser;
 
+  constructor() {
+    this.browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      headless: true
+    });
+  }
+
   async initialize() {
     // Load config
     this.config = await ConfigManager.getConfiguration();
 
     this.port = this.port || this.config.port;
     console.log("PORT IN ENV: ", process.env.PORT);
-    
-    this.browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-      headless: true
-    });
 
     this.app.use(koaLogger());
 
