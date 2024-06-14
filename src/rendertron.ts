@@ -22,8 +22,8 @@ export class Rendertron {
     // Load config
     this.config = await ConfigManager.getConfiguration();
 
+    this.port = this.port || this.config.port;
     console.log("PORT IN ENV: ", process.env.PORT);
-    // this.port = this.port;
 
     this.app.use(koaLogger());
 
@@ -94,4 +94,19 @@ export class Rendertron {
       console.log(error)
     }
   }
+}
+
+async function logUncaughtError(error: Error) {
+  console.error('Uncaught exception');
+  console.error(error);
+  process.exit(1);
+}
+
+// Start rendertron if not running inside tests.
+if (!module.parent) {
+  const rendertron = new Rendertron();
+  rendertron.initialize();
+
+  process.on('uncaughtException', logUncaughtError);
+  process.on('unhandledRejection', logUncaughtError);
 }
