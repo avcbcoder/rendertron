@@ -22,7 +22,8 @@ export class Rendertron {
     // Load config
     this.config = await ConfigManager.getConfiguration();
 
-    this.port = this.port || this.config.port;
+    console.log("PORT IN ENV: ", process.env.PORT);
+    // this.port = this.port;
 
     this.app.use(koaLogger());
 
@@ -79,6 +80,7 @@ export class Rendertron {
     const videoId = videoIdText.split("&")[0];
     console.log(`Video for ${searchTerm} : ${videoId}`);
 
+    // browser.close();
     return videoId;
   }
 
