@@ -20,18 +20,21 @@ export class Rendertron {
   private browser: puppeteer.Browser;
 
   constructor() {
-    this.browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-      headless: true
-    });
+    this.browser = null;
+    this.initialize();
   }
-
+  
   async initialize() {
     // Load config
     this.config = await ConfigManager.getConfiguration();
 
     this.port = this.port || this.config.port;
     console.log("PORT IN ENV: ", process.env.PORT);
+    
+    this.browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      headless: true
+    });
 
     this.app.use(koaLogger());
 
@@ -122,8 +125,9 @@ async function logUncaughtError(error: Error) {
 
 // Start rendertron if not running inside tests.
 if (!module.parent) {
-  const rendertron = new Rendertron();
-  rendertron.initialize();
+  // const rendertron =
+  new Rendertron();
+  // rendertron.initialize();
 
   process.on('uncaughtException', logUncaughtError);
   process.on('unhandledRejection', logUncaughtError);
