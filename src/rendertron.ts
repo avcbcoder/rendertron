@@ -79,10 +79,12 @@ export class Rendertron {
       console.error(`Error searching for ${searchTerm}:`, error);
       throw error;
     } finally {
-      try {
-        await browser.close();
-      } catch (closeError) {
-        console.error("Error closing the browser:", closeError);
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (closeError) {
+          console.error("Error closing the browser:", closeError);
+        }
       }
     }
   }
