@@ -11,7 +11,7 @@ import {Config, ConfigManager} from './config';
 
 
 let isBrowserInitiated = false;
-let gBrowser : puppeteer.Browser = null;
+let gBrowser : puppeteer.Browser;
 
 async function getBrowser() : Promise<puppeteer.Browser> {
   if (!isBrowserInitiated) {
